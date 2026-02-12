@@ -228,6 +228,36 @@
             box-shadow: 1px 1px 0 #2d2d2d;
         }
 
+        /* ---- OWN THING BUTTON ---- */
+        .own-thing-wrapper {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .btn-own-thing {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            padding: 14px 28px;
+            border: 3px solid #2d2d2d;
+            box-shadow: 3px 3px 0 #2d2d2d;
+            cursor: pointer;
+            transition: all 0.1s;
+            background: #fff;
+            color: #999;
+        }
+
+        .btn-own-thing:hover {
+            transform: translate(-1px, -1px);
+            box-shadow: 4px 4px 0 #2d2d2d;
+            color: #2d2d2d;
+            background: #f5f5f5;
+        }
+
+        .btn-own-thing:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0 #2d2d2d;
+        }
+
         .restaurant-icon {
             font-size: 32px;
             margin-bottom: 8px;
@@ -882,6 +912,10 @@
 
         <div class="restaurant-grid" id="restaurantGrid"></div>
 
+        <div class="own-thing-wrapper" id="ownThingWrapper">
+            <button class="btn-own-thing" onclick="doOwnThing()">&#x1F6B6; I'll Do My Own Thing</button>
+        </div>
+
         <div class="order-panel" id="orderPanel">
             <h2 id="orderTitle">Ordering from...</h2>
             <div class="order-buttons">
@@ -1187,6 +1221,37 @@
             }, 3200);
         }
 
+        // ---- OWN THING ----
+        function doOwnThing() {
+            // Hide any open panels
+            document.getElementById("orderPanel").classList.remove("visible");
+            document.getElementById("timePicker").classList.remove("visible");
+            document.getElementById("ownThingWrapper").style.display = "none";
+            selectedRestaurant = null;
+            renderRestaurants();
+
+            // Send notification to Lucas via EmailJS
+            if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== "YOUR_PUBLIC_KEY") {
+                emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+                    to_email: "lucas@wadvisorslp.com",
+                    reply_to: "jacob@wadvisorslp.com",
+                    from_name: "What's for Lunch?",
+                    restaurant: "N/A",
+                    order: "No order today — doing my own thing!",
+                    when: "N/A",
+                    message: "No lunch order today \u2014 I'll do my own thing!\n\n\u2014 Sent from What's for Lunch? \uD83C\uDF54"
+                }).then(function() {
+                    console.log("Own-thing notification sent!");
+                }, function(error) {
+                    console.error("Own-thing email failed:", error);
+                });
+            }
+
+            // Show confirmation directly (no scooter animation)
+            document.getElementById("confirmMsg").textContent = "Lucas knows you're doing your own thing today. Enjoy!";
+            document.getElementById("confirmation").classList.add("visible");
+        }
+
         // ---- RESET ----
         function resetUI() {
             selectedRestaurant = null;
@@ -1195,6 +1260,7 @@
             document.getElementById("orderPanel").classList.remove("visible");
             document.getElementById("timePicker").classList.remove("visible");
             document.getElementById("confirmation").classList.remove("visible");
+            document.getElementById("ownThingWrapper").style.display = "";
         }
 
         // ---- MANAGE SECTION ----
