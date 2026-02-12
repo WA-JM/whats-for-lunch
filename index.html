@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>What's for Lunch?</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <!-- EmailJS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #ffffff;
+            color: #2d2d2d;
+            min-height: 100vh;
+            padding: 40px 20px;
+            position: relative;
+        }
+
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+        }
+
+        /* ---- TITLE ---- */
+        h1 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 28px;
+            text-align: center;
+            color: #e85d26;
+            margin-bottom: 8px;
+            text-shadow: 3px 3px 0 #ffd4b8;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #999;
+            margin-bottom: 40px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 9px;
+        }
+
+        /* ---- AVATAR + SPEECH BUBBLE ---- */
+        .avatar-area {
+            position: absolute;
+            top: 16px;
+            right: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .speech-bubble {
+            background: #fff;
+            border: 3px solid #2d2d2d;
+            box-shadow: 3px 3px 0 #2d2d2d;
+            padding: 10px 14px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 8px;
+            line-height: 1.6;
+            color: #2d2d2d;
+            max-width: 180px;
+            position: relative;
+            margin-top: 10px;
+        }
+
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            right: -12px;
+            top: 14px;
+            width: 0;
+            height: 0;
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+            border-left: 12px solid #2d2d2d;
+        }
+
+        .speech-bubble::before {
+            content: '';
+            position: absolute;
+            right: -8px;
+            top: 16px;
+            width: 0;
+            height: 0;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+            border-left: 9px solid #fff;
+            z-index: 1;
+        }
+
+        .pixel-avatar {
+            width: 192px;
+            height: 120px;
+            flex-shrink: 0;
+            image-rendering: pixelated;
+        }
+
+        /* ---- SCOOTER ZOOM-OFF ANIMATION ---- */
+        .scooter-animation-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.92);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .scooter-animation-overlay.active {
+            display: flex;
+        }
+
+        .scooter-scene {
+            position: relative;
+            width: 100%;
+            height: 260px;
+            overflow: hidden;
+        }
+
+        .scooter-rider {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            image-rendering: pixelated;
+            transition: none;
+        }
+
+        .scooter-rider.zoom-off {
+            animation: zoomOff 1.2s ease-in forwards;
+        }
+
+        @keyframes zoomOff {
+            0% { transform: translateX(-50%) scaleX(1); }
+            10% { transform: translateX(-50%) scaleX(1) rotate(-3deg); }
+            100% { transform: translateX(calc(100vw)) scaleX(1) rotate(-3deg); }
+        }
+
+        .smoke-puff {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .smoke-puff.active {
+            animation: smokePuff 1.8s ease-out forwards;
+        }
+
+        @keyframes smokePuff {
+            0% { opacity: 0; transform: translateX(-50%) scale(0.3); }
+            15% { opacity: 0.8; transform: translateX(-50%) scale(1); }
+            50% { opacity: 0.5; transform: translateX(-80%) scale(1.8); }
+            100% { opacity: 0; transform: translateX(-120%) scale(2.5); }
+        }
+
+        .coming-right-up {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 28px;
+            color: #e85d26;
+            text-shadow: 3px 3px 0 #ffd4b8;
+            margin-top: 20px;
+            opacity: 0;
+            text-align: center;
+        }
+
+        .coming-right-up.active {
+            animation: textAppear 0.6s ease-out 0.6s forwards;
+        }
+
+        @keyframes textAppear {
+            0% { opacity: 0; transform: scale(0.5); }
+            60% { opacity: 1; transform: scale(1.15); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .ground-line {
+            position: absolute;
+            bottom: 48px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: #2d2d2d;
+        }
+
+        /* ---- RESTAURANT GRID ---- */
+        .restaurant-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .restaurant-card {
+            background: #fff;
+            border: 3px solid #2d2d2d;
+            box-shadow: 4px 4px 0 #2d2d2d;
+            padding: 20px 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.1s;
+            position: relative;
+        }
+
+        .restaurant-card:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0 #2d2d2d;
+            background: #fff8f0;
+        }
+
+        .restaurant-card.selected {
+            background: #e85d26;
+            color: #fff;
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0 #2d2d2d;
+        }
+
+        .restaurant-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .restaurant-name {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            line-height: 1.6;
+        }
+
+        .remove-btn {
+            position: absolute;
+            top: 4px;
+            right: 8px;
+            background: none;
+            border: none;
+            color: #ccc;
+            font-size: 18px;
+            cursor: pointer;
+            font-family: 'Press Start 2P', cursive;
+            line-height: 1;
+            padding: 4px;
+        }
+
+        .remove-btn:hover {
+            color: #e85d26;
+        }
+
+        /* ---- ORDER PANEL ---- */
+        .order-panel {
+            display: none;
+            margin-bottom: 32px;
+            padding: 24px;
+            border: 3px solid #2d2d2d;
+            box-shadow: 4px 4px 0 #2d2d2d;
+            background: #fafafa;
+        }
+
+        .order-panel.visible {
+            display: block;
+        }
+
+        .order-panel h2 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 13px;
+            margin-bottom: 20px;
+            color: #2d2d2d;
+        }
+
+        .order-buttons {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .btn {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 11px;
+            padding: 14px 24px;
+            border: 3px solid #2d2d2d;
+            box-shadow: 3px 3px 0 #2d2d2d;
+            cursor: pointer;
+            transition: all 0.1s;
+            background: #fff;
+            color: #2d2d2d;
+        }
+
+        .btn:hover {
+            transform: translate(-1px, -1px);
+            box-shadow: 4px 4px 0 #2d2d2d;
+        }
+
+        .btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0 #2d2d2d;
+        }
+
+        .btn-primary {
+            background: #e85d26;
+            color: #fff;
+            border-color: #2d2d2d;
+        }
+
+        .btn-teal {
+            background: #2ab7a9;
+            color: #fff;
+            border-color: #2d2d2d;
+        }
+
+        .btn-small {
+            font-size: 9px;
+            padding: 10px 16px;
+        }
+
+        /* ---- THE USUAL DISPLAY ---- */
+        .usual-display {
+            display: none;
+            padding: 16px;
+            background: #fff;
+            border: 2px dashed #ccc;
+            margin-bottom: 16px;
+            font-size: 15px;
+        }
+
+        .usual-display.visible {
+            display: block;
+        }
+
+        .usual-display .usual-text {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 11px;
+            color: #2ab7a9;
+            margin-bottom: 12px;
+        }
+
+        .usual-display .usual-empty {
+            color: #999;
+            font-style: italic;
+            margin-bottom: 12px;
+        }
+
+        /* ---- SOMETHING ELSE ---- */
+        .custom-order {
+            display: none;
+            margin-bottom: 16px;
+        }
+
+        .custom-order.visible {
+            display: block;
+        }
+
+        .custom-order textarea {
+            width: 100%;
+            padding: 12px;
+            border: 3px solid #2d2d2d;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 80px;
+            margin-bottom: 12px;
+            outline: none;
+        }
+
+        .custom-order textarea:focus {
+            box-shadow: 3px 3px 0 #e85d26;
+        }
+
+        /* ---- TIME PICKER ---- */
+        .time-picker {
+            display: none;
+            margin-bottom: 32px;
+            padding: 24px;
+            border: 3px solid #2d2d2d;
+            box-shadow: 4px 4px 0 #2d2d2d;
+            background: #fafafa;
+            text-align: center;
+        }
+
+        .time-picker.visible {
+            display: block;
+        }
+
+        .time-picker h2 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 13px;
+            margin-bottom: 8px;
+            color: #2d2d2d;
+        }
+
+        .time-picker .time-sub {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 20px;
+        }
+
+        .time-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .time-btn {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            padding: 14px 20px;
+            border: 3px solid #2d2d2d;
+            box-shadow: 3px 3px 0 #2d2d2d;
+            cursor: pointer;
+            transition: all 0.1s;
+            background: #fff;
+            color: #2d2d2d;
+            min-width: 100px;
+        }
+
+        .time-btn:hover {
+            transform: translate(-1px, -1px);
+            box-shadow: 4px 4px 0 #2d2d2d;
+            background: #fff8f0;
+        }
+
+        .time-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0 #2d2d2d;
+        }
+
+        .time-btn.now-btn {
+            background: #e85d26;
+            color: #fff;
+        }
+
+        /* ---- CONFIRMATION ---- */
+        .confirmation {
+            display: none;
+            text-align: center;
+            padding: 48px 24px;
+        }
+
+        .confirmation.visible {
+            display: block;
+        }
+
+        .confirmation .check {
+            font-size: 64px;
+            margin-bottom: 16px;
+            animation: bounce 0.5s ease;
+        }
+
+        .confirmation h2 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 16px;
+            color: #2ab7a9;
+            margin-bottom: 12px;
+        }
+
+        .confirmation p {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+
+        @keyframes bounce {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+
+        /* ---- MANAGE SECTION ---- */
+        .manage-section {
+            margin-top: 48px;
+            padding-top: 32px;
+            border-top: 3px solid #eee;
+        }
+
+        .manage-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+
+        .manage-header h2 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            color: #999;
+        }
+
+        .manage-header .toggle-icon {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            color: #999;
+        }
+
+        .manage-body {
+            display: none;
+        }
+
+        .manage-body.visible {
+            display: block;
+        }
+
+        .manage-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .manage-row label {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 9px;
+            width: 180px;
+            flex-shrink: 0;
+            color: #555;
+        }
+
+        .manage-row input {
+            flex: 1;
+            padding: 10px 12px;
+            border: 2px solid #ddd;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .manage-row input:focus {
+            border-color: #e85d26;
+        }
+
+        .manage-row .save-icon {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 4px;
+            opacity: 0.4;
+            transition: opacity 0.2s;
+        }
+
+        .manage-row .save-icon:hover {
+            opacity: 1;
+        }
+
+        .manage-row .save-icon.saved {
+            opacity: 1;
+        }
+
+        /* ---- ADD RESTAURANT ---- */
+        .add-restaurant-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 2px dashed #eee;
+        }
+
+        .add-restaurant-row input {
+            flex: 1;
+            padding: 10px 12px;
+            border: 2px solid #ddd;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .add-restaurant-row input:focus {
+            border-color: #2ab7a9;
+        }
+
+        /* ---- RESPONSIVE ---- */
+        @media (max-width: 600px) {
+            .avatar-area {
+                position: relative;
+                top: 0;
+                right: 0;
+                justify-content: center;
+                margin-bottom: 16px;
+            }
+            .pixel-avatar { width: 128px; height: 80px; }
+            h1 { font-size: 18px; }
+            .order-buttons { flex-direction: column; }
+            .manage-row { flex-direction: column; align-items: flex-start; }
+            .manage-row label { width: 100%; }
+            .coming-right-up { font-size: 18px; }
+        }
+
+        @media (min-width: 601px) and (max-width: 900px) {
+            .speech-bubble { font-size: 7px; max-width: 140px; }
+            .pixel-avatar { width: 160px; height: 100px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Pixel Avatar + Speech Bubble: Obed on white Mad Dog scooter with helmet -->
+    <div class="avatar-area">
+        <div class="speech-bubble">Hey Sky, what's for lunch?</div>
+        <canvas id="pixelAvatar" class="pixel-avatar" width="64" height="40"></canvas>
+        <script>
+        function drawScooterRider(canvas) {
+            var ctx = canvas.getContext('2d');
+            var W = 64, HH = 40;
+            ctx.clearRect(0, 0, W, HH);
+
+            var _ = null;
+            // Skin
+            var s = '#8B5E3C', sk = '#A97B5A', dk = '#5C3A1E';
+            // Helmet (orange)
+            var h = '#e85d26', hd = '#c44a1a';
+            // Visor
+            var v = '#1a1a1a';
+            // Eyes
+            var e = '#1a1a1a';
+            // Shirt blue
+            var t = '#89CFF0', td = '#6BB0D9';
+            // Pants dark
+            var p = '#2d2d2d';
+            // White scooter body
+            var w = '#f0f0f0', ww = '#e0e0e0';
+            // Outline / dark
+            var b = '#2d2d2d';
+            // Chrome / metal
+            var c = '#999999', cl = '#bbbbbb';
+            // Rubber / tire
+            var r = '#1a1a1a', rd = '#333333';
+            // Engine gray
+            var g = '#666666', gd = '#444444';
+            // Headlight
+            var y = '#ffcc00', yd = '#ffaa00';
+            // Exhaust pipe
+            var ex = '#888888';
+            // Seat
+            var se = '#333333';
+            // Handlebar grip
+            var hg = '#444444';
+            // Red taillight
+            var rl = '#ff2222';
+            // Fender white
+            var fw = '#e8e8e8';
+
+            // Helper to draw
+            function px(x, yy, color) {
+                ctx.fillStyle = color;
+                ctx.fillRect(x, yy, 1, 1);
+            }
+
+            // === RIDER (upper half, sitting position, leaning forward) ===
+
+            // Helmet (rows 2-9, centered around x=24)
+            // Top dome
+            for(var i=22;i<=27;i++) px(i,1,h);
+            for(var i=21;i<=28;i++) px(i,2,h);
+            for(var i=20;i<=29;i++) px(i,3,h);
+            for(var i=20;i<=29;i++) px(i,4,h);
+            // Visor stripe
+            px(20,5,h); px(21,5,h);
+            for(var i=22;i<=27;i++) px(i,5,v);
+            px(28,5,h); px(29,5,h);
+            // Face under visor
+            px(20,6,h); px(21,6,s);
+            px(22,6,e); px(23,6,sk); px(24,6,sk); px(25,6,sk); px(26,6,e); px(27,6,sk);
+            px(28,6,s); px(29,6,h);
+            // Lower face / chin strap
+            px(20,7,h); px(21,7,s); px(22,7,sk); px(23,7,dk); px(24,7,dk);
+            px(25,7,sk); px(26,7,sk); px(27,7,sk); px(28,7,s); px(29,7,h);
+            // Chin
+            px(21,8,h); px(22,8,h); px(23,8,s); px(24,8,s); px(25,8,s); px(26,8,s); px(27,8,h); px(28,8,h);
+
+            // Neck
+            px(23,9,s); px(24,9,s); px(25,9,s); px(26,9,s);
+
+            // === BODY (shirt, leaning forward, arms to handlebars) ===
+            // Shoulders row 10
+            for(var i=21;i<=28;i++) px(i,10,t);
+            // Upper torso rows 11-12
+            for(var i=20;i<=29;i++) px(i,11,t);
+            px(23,11,td); px(24,11,td);
+            for(var i=20;i<=29;i++) px(i,12,t);
+            px(23,12,td); px(24,12,td);
+            // Arm extending forward to handlebars (row 11-13)
+            for(var i=30;i<=35;i++) px(i,11,t);
+            for(var i=30;i<=36;i++) px(i,12,t);
+            // Hands on grips
+            px(36,11,s); px(37,11,s);
+            px(37,12,s); px(38,12,s);
+
+            // Lower torso row 13-14
+            for(var i=20;i<=28;i++) px(i,13,t);
+            px(29,13,b); px(30,13,b);
+            for(var i=20;i<=27;i++) px(i,14,p);
+            px(28,14,p); px(29,14,p);
+
+            // Legs sitting on scooter (rows 15-17)
+            // Thigh going forward
+            for(var i=21;i<=28;i++) px(i,15,p);
+            px(29,15,p); px(30,15,p);
+            // Knee/shin
+            for(var i=24;i<=31;i++) px(i,16,p);
+            // Foot on footpeg
+            px(30,17,p); px(31,17,p); px(32,17,b);
+
+            // === SCOOTER (Mad Dog / Ruckus style, side profile facing right) ===
+
+            // --- Seat (black, flat, rows 15-16) ---
+            for(var i=15;i<=24;i++) { px(i,15,se); px(i,16,se); }
+            // Seat outline
+            for(var i=14;i<=25;i++) px(i,14,b);
+
+            // --- Rear fender (white, over back wheel, rows 17-19) ---
+            for(var i=7;i<=14;i++) px(i,17,b);
+            for(var i=8;i<=13;i++) px(i,18,fw);
+            px(7,18,b); px(14,18,b);
+            for(var i=8;i<=13;i++) px(i,19,fw);
+            px(7,19,b); px(14,19,b);
+
+            // Taillight
+            px(6,17,rl); px(6,18,rl);
+
+            // --- Main frame / body (white tubes, rows 17-23) ---
+            // Top frame rail
+            for(var i=14;i<=38;i++) px(i,17,b);
+            // Body panels (white)
+            for(var i=15;i<=37;i++) px(i,18,w);
+            px(14,18,b); px(38,18,b);
+            for(var i=15;i<=37;i++) px(i,19,w);
+            px(14,19,b); px(38,19,b);
+            // Lower body
+            for(var i=15;i<=37;i++) px(i,20,ww);
+            px(14,20,b); px(38,20,b);
+
+            // Bottom frame rail
+            for(var i=14;i<=38;i++) px(i,21,b);
+
+            // --- Exposed frame tubes (diagonal from seat to front fork) ---
+            // Lower diagonal tube
+            px(15,22,b); px(16,22,c);
+            px(17,23,b); px(18,23,c);
+            px(19,24,b); px(20,24,c);
+            // Another tube from mid to rear
+            px(13,22,c); px(12,23,b);
+            px(11,24,c); px(10,25,b);
+
+            // --- Engine block (center, visible between frame tubes) ---
+            for(var i=20;i<=30;i++) px(i,22,b);
+            for(var i=21;i<=29;i++) px(i,23,g);
+            px(20,23,b); px(30,23,b);
+            for(var i=21;i<=29;i++) px(i,24,gd);
+            px(20,24,b); px(30,24,b);
+            for(var i=21;i<=29;i++) px(i,25,g);
+            px(20,25,b); px(30,25,b);
+            for(var i=20;i<=30;i++) px(i,26,b);
+
+            // Exhaust pipe (comes out right side of engine)
+            for(var i=31;i<=36;i++) px(i,25,ex);
+            px(37,25,ex); px(37,24,b); px(37,26,b);
+            for(var i=31;i<=36;i++) { px(i,24,b); px(i,26,b); }
+
+            // --- Front fork (angled tube going up to handlebars) ---
+            px(35,22,c); px(36,22,c);
+            px(36,21,c); px(37,21,c);
+            px(37,20,c); px(38,20,c);
+            px(38,19,c); px(39,19,c);
+            // Fork going down to front wheel
+            px(38,22,c); px(39,22,c);
+            px(39,23,c); px(40,23,c);
+            px(40,24,c); px(41,24,c);
+            px(41,25,c); px(42,25,c);
+            px(42,26,c); px(43,26,b);
+
+            // --- Handlebars (at top of fork) ---
+            px(38,13,hg); px(39,13,b);
+            px(38,14,b); px(39,14,c); px(40,14,c);
+            px(39,15,b); px(40,15,c); px(41,15,b);
+            px(39,16,b); px(40,16,c); px(41,16,b);
+            px(39,17,b); px(40,17,c); px(41,17,b);
+            // Mirror
+            px(41,13,c); px(42,13,c); px(42,12,b); px(43,12,b); px(43,13,b);
+
+            // --- Headlight (dual lights, Mad Dog style) ---
+            px(42,17,b); px(43,17,y); px(44,17,y); px(45,17,b);
+            px(42,18,b); px(43,18,y); px(44,18,yd); px(45,18,b);
+            px(42,19,b); px(43,19,b); px(44,19,b); px(45,19,b);
+
+            // === WHEELS (fat tires, like a Ruckus) ===
+
+            // --- Rear wheel (centered around x=10, y=30) ---
+            // Tire ring (8px diameter)
+            var rwx = 10, rwy = 30;
+            // Top
+            for(var i=-3;i<=3;i++) px(rwx+i, rwy-4, r);
+            for(var i=-4;i<=4;i++) px(rwx+i, rwy-3, r);
+            // Sides
+            for(var dy=-2;dy<=2;dy++) {
+                px(rwx-5, rwy+dy, r); px(rwx-4, rwy+dy, r);
+                px(rwx+4, rwy+dy, r); px(rwx+5, rwy+dy, r);
+            }
+            // Bottom
+            for(var i=-4;i<=4;i++) px(rwx+i, rwy+3, r);
+            for(var i=-3;i<=3;i++) px(rwx+i, rwy+4, r);
+            // Inner tire
+            for(var dy=-2;dy<=2;dy++)
+                for(var dx=-3;dx<=3;dx++)
+                    px(rwx+dx, rwy+dy, rd);
+            // Hub/rim (chrome center)
+            for(var dy=-1;dy<=1;dy++)
+                for(var dx=-1;dx<=1;dx++)
+                    px(rwx+dx, rwy+dy, cl);
+            px(rwx, rwy, c);
+            // Spokes
+            px(rwx, rwy-2, c); px(rwx, rwy+2, c);
+            px(rwx-2, rwy, c); px(rwx+2, rwy, c);
+
+            // --- Front wheel (centered around x=43, y=30) ---
+            var fwx = 43, fwy = 30;
+            // Top
+            for(var i=-3;i<=3;i++) px(fwx+i, fwy-4, r);
+            for(var i=-4;i<=4;i++) px(fwx+i, fwy-3, r);
+            // Sides
+            for(var dy=-2;dy<=2;dy++) {
+                px(fwx-5, fwy+dy, r); px(fwx-4, fwy+dy, r);
+                px(fwx+4, fwy+dy, r); px(fwx+5, fwy+dy, r);
+            }
+            // Bottom
+            for(var i=-4;i<=4;i++) px(fwx+i, fwy+3, r);
+            for(var i=-3;i<=3;i++) px(fwx+i, fwy+4, r);
+            // Inner tire
+            for(var dy=-2;dy<=2;dy++)
+                for(var dx=-3;dx<=3;dx++)
+                    px(fwx+dx, fwy+dy, rd);
+            // Hub/rim
+            for(var dy=-1;dy<=1;dy++)
+                for(var dx=-1;dx<=1;dx++)
+                    px(fwx+dx, fwy+dy, cl);
+            px(fwx, fwy, c);
+            // Spokes
+            px(fwx, fwy-2, c); px(fwx, fwy+2, c);
+            px(fwx-2, fwy, c); px(fwx+2, fwy, c);
+
+            // --- Rear fender over wheel ---
+            for(var i=6;i<=14;i++) px(i,25,b);
+            for(var i=7;i<=13;i++) px(i,24,fw);
+
+            // --- Front fender over wheel ---
+            for(var i=39;i<=47;i++) px(i,25,b);
+            for(var i=40;i<=46;i++) px(i,24,fw);
+            for(var i=40;i<=46;i++) px(i,23,fw);
+            px(39,23,b); px(47,23,b); px(39,24,b); px(47,24,b);
+
+            // --- Footpeg ---
+            px(28,22,b); px(29,22,b); px(30,22,b); px(31,22,b);
+            px(28,23,c); px(29,23,c); px(30,23,c); px(31,23,c);
+        }
+        drawScooterRider(document.getElementById('pixelAvatar'));
+        </script>
+    </div>
+
+    <!-- Scooter Zoom-Off Animation Overlay -->
+    <div class="scooter-animation-overlay" id="scooterOverlay">
+        <div class="scooter-scene">
+            <div class="ground-line"></div>
+            <canvas id="scooterAnim" class="scooter-rider" width="64" height="40" style="width:256px;height:160px;image-rendering:pixelated;"></canvas>
+            <canvas id="smokePuff" class="smoke-puff" width="32" height="24" style="width:128px;height:96px;image-rendering:pixelated;"></canvas>
+        </div>
+        <div class="coming-right-up" id="comingRightUp">Coming right up!</div>
+    </div>
+
+    <div class="container">
+        <h1>What's for Lunch?</h1>
+        <p class="subtitle">Pick a spot, place your order</p>
+
+        <div class="restaurant-grid" id="restaurantGrid"></div>
+
+        <div class="order-panel" id="orderPanel">
+            <h2 id="orderTitle">Ordering from...</h2>
+            <div class="order-buttons">
+                <button class="btn btn-primary" onclick="chooseUsual()">The Usual</button>
+                <button class="btn btn-teal" onclick="chooseSomethingElse()">Something Else</button>
+            </div>
+
+            <div class="usual-display" id="usualDisplay">
+                <div class="usual-text" id="usualText"></div>
+                <div class="usual-empty" id="usualEmpty">No usual set yet &#8212; set one below!</div>
+                <button class="btn btn-primary btn-small" id="confirmUsualBtn" onclick="submitOrder('usual')">Send it!</button>
+            </div>
+
+            <div class="custom-order" id="customOrder">
+                <textarea id="customText" placeholder="What are you having?"></textarea>
+                <button class="btn btn-teal btn-small" onclick="submitOrder('custom')">Send it!</button>
+            </div>
+        </div>
+
+        <div class="time-picker" id="timePicker">
+            <h2>When do you want it?</h2>
+            <p class="time-sub" id="timeOrderSummary"></p>
+            <div class="time-options">
+                <button class="time-btn now-btn" onclick="selectTime('Now')">Now</button>
+                <button class="time-btn" onclick="selectTime('11:30')">11:30</button>
+                <button class="time-btn" onclick="selectTime('12:00')">12:00</button>
+                <button class="time-btn" onclick="selectTime('12:30')">12:30</button>
+                <button class="time-btn" onclick="selectTime('1:00')">1:00</button>
+            </div>
+        </div>
+
+        <div class="confirmation" id="confirmation">
+            <div class="check">&#x1F354;</div>
+            <h2>Order Sent!</h2>
+            <p id="confirmMsg">Your order has been sent to Lucas.</p>
+            <button class="btn btn-small" onclick="resetUI()">Order Again</button>
+        </div>
+
+        <div class="manage-section" id="manageSection">
+            <div class="manage-header" onclick="toggleManage()">
+                <h2>Manage Usuals & Restaurants</h2>
+                <span class="toggle-icon" id="toggleIcon">+</span>
+            </div>
+            <div class="manage-body" id="manageBody">
+                <div id="manageRows"></div>
+                <div class="add-restaurant-row">
+                    <input type="text" id="newRestaurantName" placeholder="New restaurant name...">
+                    <button class="btn btn-teal btn-small" onclick="addRestaurant()">+ Add</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ---- EMAILJS CONFIG ----
+        // TODO: Replace these with your actual EmailJS credentials
+        // Sign up at https://www.emailjs.com (free tier = 200 emails/month)
+        const EMAILJS_PUBLIC_KEY = "busHdBKduAjbOIsS3";    // From EmailJS dashboard > Account > API Keys
+        const EMAILJS_SERVICE_ID = "service_gll0ucq";    // From EmailJS dashboard > Email Services
+        const EMAILJS_TEMPLATE_ID = "template_lpfr1h6";  // From EmailJS dashboard > Email Templates
+
+        // Initialize EmailJS
+        if (typeof emailjs !== 'undefined') {
+            emailjs.init(EMAILJS_PUBLIC_KEY);
+        }
+
+        // ---- LOCAL STORAGE BACKEND ----
+        const STORAGE_KEY = "whats-for-lunch-data";
+
+        const DEFAULT_DATA = {
+            restaurants: ["Chipotle", "Chopt", "Fiesta", "Sushi Soba", "Stamford Diner", "Wildacre Rotisserie"],
+            usuals: {
+                "Chipotle": "",
+                "Chopt": "",
+                "Fiesta": "",
+                "Sushi Soba": "",
+                "Stamford Diner": "",
+                "Wildacre Rotisserie": ""
+            }
+        };
+
+        function loadData() {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+                try { return JSON.parse(raw); } catch(e) {}
+            }
+            saveData(DEFAULT_DATA);
+            return JSON.parse(JSON.stringify(DEFAULT_DATA));
+        }
+
+        function saveData(data) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+
+        let appData = loadData();
+        let selectedRestaurant = null;
+
+        const FOOD_ICONS = {
+            "Chipotle": "\u{1F32F}",
+            "Chopt": "\u{1F957}",
+            "Fiesta": "\u{1F32E}",
+            "Sushi Soba": "\u{1F363}",
+            "Stamford Diner": "\u{1F373}",
+            "Wildacre Rotisserie": "\u{1F357}"
+        };
+        const DEFAULT_ICON = "\u{1F37D}";
+
+        // ---- RENDER RESTAURANTS ----
+        function renderRestaurants() {
+            const grid = document.getElementById("restaurantGrid");
+            grid.innerHTML = "";
+            appData.restaurants.forEach(name => {
+                const card = document.createElement("div");
+                card.className = "restaurant-card" + (selectedRestaurant === name ? " selected" : "");
+                card.innerHTML =
+                    '<button class="remove-btn" title="Remove" onclick="event.stopPropagation(); removeRestaurant(\'' + name.replace(/'/g, "\\'") + '\')">&times;</button>' +
+                    '<span class="restaurant-icon">' + (FOOD_ICONS[name] || DEFAULT_ICON) + '</span>' +
+                    '<span class="restaurant-name">' + name + '</span>';
+                card.addEventListener("click", () => selectRestaurant(name));
+                grid.appendChild(card);
+            });
+        }
+
+        // ---- SELECT RESTAURANT ----
+        function selectRestaurant(name) {
+            selectedRestaurant = name;
+            renderRestaurants();
+            document.getElementById("confirmation").classList.remove("visible");
+            document.getElementById("orderPanel").classList.add("visible");
+            document.getElementById("orderTitle").textContent = "Ordering from " + name;
+            document.getElementById("usualDisplay").classList.remove("visible");
+            document.getElementById("customOrder").classList.remove("visible");
+        }
+
+        // ---- THE USUAL ----
+        function chooseUsual() {
+            document.getElementById("customOrder").classList.remove("visible");
+            var display = document.getElementById("usualDisplay");
+            display.classList.add("visible");
+
+            var usual = appData.usuals[selectedRestaurant] || "";
+            if (usual) {
+                document.getElementById("usualText").textContent = usual;
+                document.getElementById("usualText").style.display = "block";
+                document.getElementById("usualEmpty").style.display = "none";
+                document.getElementById("confirmUsualBtn").style.display = "inline-block";
+            } else {
+                document.getElementById("usualText").style.display = "none";
+                document.getElementById("usualEmpty").style.display = "block";
+                document.getElementById("confirmUsualBtn").style.display = "none";
+            }
+        }
+
+        // ---- SOMETHING ELSE ----
+        function chooseSomethingElse() {
+            document.getElementById("usualDisplay").classList.remove("visible");
+            document.getElementById("customOrder").classList.add("visible");
+            document.getElementById("customText").value = "";
+            document.getElementById("customText").focus();
+        }
+
+        // ---- SUBMIT ORDER ----
+        var pendingOrder = "";
+
+        function submitOrder(type) {
+            if (type === "usual") {
+                pendingOrder = appData.usuals[selectedRestaurant];
+            } else {
+                pendingOrder = document.getElementById("customText").value.trim();
+                if (!pendingOrder) { alert("Please enter your order!"); return; }
+            }
+
+            // Show time picker
+            document.getElementById("orderPanel").classList.remove("visible");
+            document.getElementById("timeOrderSummary").textContent = pendingOrder + " from " + selectedRestaurant;
+            document.getElementById("timePicker").classList.add("visible");
+        }
+
+        function selectTime(time) {
+            var timeLabel = (time === "Now") ? "ASAP" : "at " + time;
+
+            console.log("=== ORDER ===");
+            console.log("TO: lucas@wadvisorslp.com");
+            console.log("Restaurant: " + selectedRestaurant);
+            console.log("Order: " + pendingOrder);
+            console.log("When: " + timeLabel);
+            console.log("=============");
+
+            document.getElementById("timePicker").classList.remove("visible");
+
+            // Send email via EmailJS
+            var emailSent = false;
+            var emailError = false;
+
+            if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== "YOUR_PUBLIC_KEY") {
+                emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+                    to_email: "lucas@wadvisorslp.com",
+                    reply_to: "jacob@wadvisorslp.com",
+                    from_name: "What's for Lunch?",
+                    restaurant: selectedRestaurant,
+                    order: pendingOrder,
+                    when: timeLabel,
+                    message: "Lunch order from " + selectedRestaurant + ":\n\n" +
+                             pendingOrder + "\n\n" +
+                             "When: " + timeLabel + "\n\n" +
+                             "— Sent from What's for Lunch? \uD83C\uDF54"
+                }).then(function() {
+                    emailSent = true;
+                    console.log("Email sent successfully!");
+                }, function(error) {
+                    emailError = true;
+                    console.error("Email failed:", error);
+                });
+            } else {
+                console.warn("EmailJS not configured — order logged to console only.");
+            }
+
+            // Trigger scooter zoom-off animation
+            playScooterAnimation(function() {
+                var msg = pendingOrder + " from " + selectedRestaurant + " (" + timeLabel + ")";
+                if (emailError) {
+                    msg += " \u2014 email failed! Check console.";
+                } else if (EMAILJS_PUBLIC_KEY === "YOUR_PUBLIC_KEY") {
+                    msg += " \u2014 logged (set up EmailJS to send emails)";
+                } else {
+                    msg += " \u2014 sent to Lucas!";
+                }
+                document.getElementById("confirmMsg").textContent = msg;
+                document.getElementById("confirmation").classList.add("visible");
+            });
+        }
+
+        // ---- SCOOTER ZOOM-OFF ANIMATION ----
+        function playScooterAnimation(onComplete) {
+            var overlay = document.getElementById("scooterOverlay");
+            var scooterCanvas = document.getElementById("scooterAnim");
+            var smokeCanvas = document.getElementById("smokePuff");
+            var scooterEl = scooterCanvas;
+            var smokeEl = smokeCanvas;
+            var textEl = document.getElementById("comingRightUp");
+
+            // Draw the scooter on the animation canvas
+            drawScooterRider(scooterCanvas);
+
+            // Draw smoke puffs on smoke canvas
+            var sCtx = smokeCanvas.getContext('2d');
+            sCtx.clearRect(0, 0, 32, 24);
+            var cloudColor = '#cccccc';
+            var cloudLight = '#e0e0e0';
+            // Puffy smoke cloud pixels
+            var smokePixels = [
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,1,2,2,2,1,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,1,2,2,2,1,0,1,2,2,2,2,2,1,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,1,1,1,0,1,2,2,2,2,2,1,2,2,2,2,2,2,2,1,0,0,0,0,0,0,0,0],
+                [0,0,0,0,1,2,2,2,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,0,0,0,0,0,0,0],
+                [0,0,0,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,0,0,0,0,0,0],
+                [0,0,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,0,0,0,0,0,0],
+                [0,0,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,0,0,0,0,0,0,0],
+                [0,0,0,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,0,0,0,0,0,0,0,0],
+                [0,0,0,0,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,1,1,2,2,2,2,2,2,2,2,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,1,1,1,2,2,2,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+            ];
+            for (var y = 0; y < smokePixels.length; y++) {
+                for (var x = 0; x < smokePixels[y].length; x++) {
+                    if (smokePixels[y][x] === 1) { sCtx.fillStyle = cloudColor; sCtx.fillRect(x, y + 4, 1, 1); }
+                    else if (smokePixels[y][x] === 2) { sCtx.fillStyle = cloudLight; sCtx.fillRect(x, y + 4, 1, 1); }
+                }
+            }
+
+            // Reset animation states
+            scooterEl.classList.remove('zoom-off');
+            smokeEl.classList.remove('active');
+            textEl.classList.remove('active');
+
+            // Show overlay
+            overlay.classList.add('active');
+
+            // Start zoom after brief pause
+            setTimeout(function() {
+                scooterEl.classList.add('zoom-off');
+                // Show smoke where scooter was
+                setTimeout(function() {
+                    smokeEl.classList.add('active');
+                }, 150);
+                // Show text
+                textEl.classList.add('active');
+            }, 400);
+
+            // After animation completes, hide overlay and show confirmation
+            setTimeout(function() {
+                overlay.classList.remove('active');
+                scooterEl.classList.remove('zoom-off');
+                smokeEl.classList.remove('active');
+                textEl.classList.remove('active');
+                if (onComplete) onComplete();
+            }, 3200);
+        }
+
+        // ---- RESET ----
+        function resetUI() {
+            selectedRestaurant = null;
+            pendingOrder = "";
+            renderRestaurants();
+            document.getElementById("orderPanel").classList.remove("visible");
+            document.getElementById("timePicker").classList.remove("visible");
+            document.getElementById("confirmation").classList.remove("visible");
+        }
+
+        // ---- MANAGE SECTION ----
+        function toggleManage() {
+            var body = document.getElementById("manageBody");
+            var icon = document.getElementById("toggleIcon");
+            if (body.classList.contains("visible")) {
+                body.classList.remove("visible");
+                icon.textContent = "+";
+            } else {
+                body.classList.add("visible");
+                icon.textContent = "-";
+            }
+        }
+
+        function renderManageRows() {
+            var container = document.getElementById("manageRows");
+            container.innerHTML = "";
+            appData.restaurants.forEach(function(name) {
+                var row = document.createElement("div");
+                row.className = "manage-row";
+                var escapedName = name.replace(/'/g, "\\'");
+                row.innerHTML =
+                    '<label>' + name + '</label>' +
+                    '<input type="text" value="' + (appData.usuals[name] || '').replace(/"/g, '&quot;') + '" ' +
+                    'placeholder="e.g. Burrito Bowl, extra guac" ' +
+                    'onchange="saveUsual(\'' + escapedName + '\', this.value, this)">' +
+                    '<button class="save-icon" title="Save" onclick="saveUsual(\'' + escapedName + '\', this.previousElementSibling.value, this.previousElementSibling)">\u{1F4BE}</button>';
+                container.appendChild(row);
+            });
+        }
+
+        function saveUsual(restaurant, value, inputEl) {
+            appData.usuals[restaurant] = value;
+            saveData(appData);
+            var parent = inputEl.closest(".manage-row");
+            var btn = parent.querySelector(".save-icon");
+            btn.classList.add("saved");
+            btn.textContent = "\u2705";
+            setTimeout(function() { btn.textContent = "\u{1F4BE}"; btn.classList.remove("saved"); }, 1500);
+        }
+
+        // ---- ADD / REMOVE RESTAURANT ----
+        function addRestaurant() {
+            var input = document.getElementById("newRestaurantName");
+            var name = input.value.trim();
+            if (!name) return;
+            if (appData.restaurants.indexOf(name) !== -1) {
+                alert("Restaurant already exists!");
+                return;
+            }
+            appData.restaurants.push(name);
+            appData.usuals[name] = "";
+            saveData(appData);
+            input.value = "";
+            renderRestaurants();
+            renderManageRows();
+        }
+
+        function removeRestaurant(name) {
+            if (!confirm("Remove " + name + " from the list?")) return;
+            var idx = appData.restaurants.indexOf(name);
+            if (idx !== -1) appData.restaurants.splice(idx, 1);
+            delete appData.usuals[name];
+            saveData(appData);
+            if (selectedRestaurant === name) {
+                selectedRestaurant = null;
+                document.getElementById("orderPanel").classList.remove("visible");
+            }
+            renderRestaurants();
+            renderManageRows();
+        }
+
+        // ---- INIT ----
+        renderRestaurants();
+        renderManageRows();
+    </script>
+</body>
+</html>
