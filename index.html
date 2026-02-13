@@ -634,6 +634,37 @@
     </style>
 </head>
 <body>
+    <!-- Password Gate -->
+    <div id="passwordGate" style="
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: #ffffff; z-index: 9999;
+        display: flex; align-items: center; justify-content: center;
+        flex-direction: column; font-family: 'Segoe UI', sans-serif;
+    ">
+        <div style="text-align: center;">
+            <div style="font-size: 48px; margin-bottom: 16px;">&#x1F354;</div>
+            <h1 style="font-family: 'Press Start 2P', cursive; font-size: 22px; color: #e85d26;
+                        text-shadow: 3px 3px 0 #ffd4b8; margin-bottom: 24px;">
+                What's for Lunch?
+            </h1>
+            <p style="color: #999; margin-bottom: 20px; font-size: 14px;">Enter the password to continue</p>
+            <input type="password" id="gatePassword" placeholder="Password" autocomplete="off" style="
+                padding: 12px 20px; font-size: 16px; border: 3px solid #2d2d2d;
+                border-radius: 6px; text-align: center; width: 220px;
+                font-family: 'Segoe UI', sans-serif; outline: none;
+            " onkeydown="if(event.key==='Enter')checkGatePassword()">
+            <br>
+            <button onclick="checkGatePassword()" style="
+                margin-top: 12px; padding: 12px 36px; font-size: 15px; font-weight: bold;
+                background: #e85d26; color: white; border: 3px solid #c14e1e;
+                border-radius: 6px; cursor: pointer; font-family: 'Segoe UI', sans-serif;
+            ">Enter</button>
+            <p id="gateError" style="color: #e53935; margin-top: 12px; font-size: 13px; display: none;">
+                Incorrect password. Try again.
+            </p>
+        </div>
+    </div>
+    <div id="appContent" style="display: none;">
     <!-- Pixel Avatar + Speech Bubble: Obed on white Mad Dog scooter with helmet -->
     <div class="avatar-area">
         <div class="speech-bubble">Hey Sky, what's for lunch?</div>
@@ -950,7 +981,7 @@
         <div class="confirmation" id="confirmation">
             <div class="check">&#x1F354;</div>
             <h2>Order Sent!</h2>
-            <p id="confirmMsg">Your order has been sent to Lucas.</p>
+            <p id="confirmMsg">Your order has been sent to Obed.</p>
             <button class="btn btn-small" onclick="resetUI()">Order Again</button>
         </div>
 
@@ -1098,7 +1129,7 @@
             var timeLabel = (time === "Now") ? "ASAP" : "at " + time;
 
             console.log("=== ORDER ===");
-            console.log("TO: lucas@wadvisorslp.com");
+            console.log("TO: obed@wadvisorslp.com");
             console.log("Restaurant: " + selectedRestaurant);
             console.log("Order: " + pendingOrder);
             console.log("When: " + timeLabel);
@@ -1112,7 +1143,7 @@
 
             if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== "YOUR_PUBLIC_KEY") {
                 emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-                    to_email: "lucas@wadvisorslp.com",
+                    to_email: "obed@wadvisorslp.com",
                     reply_to: "jacob@wadvisorslp.com",
                     from_name: "What's for Lunch?",
                     restaurant: selectedRestaurant,
@@ -1141,7 +1172,7 @@
                 } else if (EMAILJS_PUBLIC_KEY === "YOUR_PUBLIC_KEY") {
                     msg += " \u2014 logged (set up EmailJS to send emails)";
                 } else {
-                    msg += " \u2014 sent to Lucas!";
+                    msg += " \u2014 sent to Obed!";
                 }
                 document.getElementById("confirmMsg").textContent = msg;
                 document.getElementById("confirmation").classList.add("visible");
@@ -1230,10 +1261,10 @@
             selectedRestaurant = null;
             renderRestaurants();
 
-            // Send notification to Lucas via EmailJS
+            // Send notification to Obed via EmailJS
             if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== "YOUR_PUBLIC_KEY") {
                 emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-                    to_email: "lucas@wadvisorslp.com",
+                    to_email: "obed@wadvisorslp.com",
                     reply_to: "jacob@wadvisorslp.com",
                     from_name: "What's for Lunch?",
                     restaurant: "N/A",
@@ -1248,7 +1279,7 @@
             }
 
             // Show confirmation directly (no scooter animation)
-            document.getElementById("confirmMsg").textContent = "Lucas knows you're doing your own thing today. Enjoy!";
+            document.getElementById("confirmMsg").textContent = "Obed knows you're doing your own thing today. Enjoy!";
             document.getElementById("confirmation").classList.add("visible");
         }
 
@@ -1337,6 +1368,41 @@
         // ---- INIT ----
         renderRestaurants();
         renderManageRows();
+    </script>
+    </div><!-- end appContent -->
+
+    <script>
+    // Password gate — hash compared so password isn't in plain text in source
+    const PASS_HASH = '972440c1abd45466fb36c4e4d7b013d42815c783d680ddf8ae335f9801ab1074';
+
+    async function sha256(str) {
+        const buf = await crypto.subtle.digest('SHA-256',
+            new TextEncoder().encode(str));
+        return Array.from(new Uint8Array(buf))
+            .map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function checkGatePassword() {
+        const input = document.getElementById('gatePassword').value.toLowerCase().trim();
+        const hash = await sha256(input);
+        if (hash === PASS_HASH) {
+            document.getElementById('passwordGate').style.display = 'none';
+            document.getElementById('appContent').style.display = 'block';
+            localStorage.setItem('lunchAuth', PASS_HASH);
+        } else {
+            document.getElementById('gateError').style.display = 'block';
+            document.getElementById('gatePassword').value = '';
+            document.getElementById('gatePassword').focus();
+        }
+    }
+
+    // Auto-unlock if previously authenticated
+    if (localStorage.getItem('lunchAuth') === PASS_HASH) {
+        document.getElementById('passwordGate').style.display = 'none';
+        document.getElementById('appContent').style.display = 'block';
+    } else {
+        document.getElementById('gatePassword').focus();
+    }
     </script>
 </body>
 </html>
