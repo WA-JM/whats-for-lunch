@@ -6,7 +6,9 @@
     <title>What's for Lunch?</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <!-- EmailJS SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4.4.1/dist/email.min.js"
+            integrity="sha384-SALc35EccAf6RzGw4iNsyj7kTPr33K7RoGzYu+7heZhT8s0GZouafRiCg1qy44AS"
+            crossorigin="anonymous"></script>
     <style>
         * {
             margin: 0;
@@ -652,9 +654,9 @@
                 padding: 12px 20px; font-size: 16px; border: 3px solid #2d2d2d;
                 border-radius: 6px; text-align: center; width: 220px;
                 font-family: 'Segoe UI', sans-serif; outline: none;
-            " onkeydown="if(event.key==='Enter')checkGatePassword()">
+            ">
             <br>
-            <button onclick="checkGatePassword()" style="
+            <button id="gateSubmitBtn" style="
                 margin-top: 12px; padding: 12px 36px; font-size: 15px; font-weight: bold;
                 background: #e85d26; color: white; border: 3px solid #c14e1e;
                 border-radius: 6px; cursor: pointer; font-family: 'Segoe UI', sans-serif;
@@ -944,25 +946,25 @@
         <div class="restaurant-grid" id="restaurantGrid"></div>
 
         <div class="own-thing-wrapper" id="ownThingWrapper">
-            <button class="btn-own-thing" onclick="doOwnThing()">&#x1F6B6; I'll Do My Own Thing</button>
+            <button class="btn-own-thing" id="btnOwnThing">&#x1F6B6; I'll Do My Own Thing</button>
         </div>
 
         <div class="order-panel" id="orderPanel">
             <h2 id="orderTitle">Ordering from...</h2>
             <div class="order-buttons">
-                <button class="btn btn-primary" onclick="chooseUsual()">The Usual</button>
-                <button class="btn btn-teal" onclick="chooseSomethingElse()">Something Else</button>
+                <button class="btn btn-primary" id="btnUsual">The Usual</button>
+                <button class="btn btn-teal" id="btnSomethingElse">Something Else</button>
             </div>
 
             <div class="usual-display" id="usualDisplay">
                 <div class="usual-text" id="usualText"></div>
                 <div class="usual-empty" id="usualEmpty">No usual set yet &#8212; set one below!</div>
-                <button class="btn btn-primary btn-small" id="confirmUsualBtn" onclick="submitOrder('usual')">Send it!</button>
+                <button class="btn btn-primary btn-small" id="confirmUsualBtn">Send it!</button>
             </div>
 
             <div class="custom-order" id="customOrder">
                 <textarea id="customText" placeholder="What are you having?"></textarea>
-                <button class="btn btn-teal btn-small" onclick="submitOrder('custom')">Send it!</button>
+                <button class="btn btn-teal btn-small" id="btnSubmitCustom">Send it!</button>
             </div>
         </div>
 
@@ -970,11 +972,11 @@
             <h2>When do you want it?</h2>
             <p class="time-sub" id="timeOrderSummary"></p>
             <div class="time-options">
-                <button class="time-btn now-btn" onclick="selectTime('Now')">Now</button>
-                <button class="time-btn" onclick="selectTime('11:30')">11:30</button>
-                <button class="time-btn" onclick="selectTime('12:00')">12:00</button>
-                <button class="time-btn" onclick="selectTime('12:30')">12:30</button>
-                <button class="time-btn" onclick="selectTime('1:00')">1:00</button>
+                <button class="time-btn now-btn" id="timeNow">Now</button>
+                <button class="time-btn" id="time1130">11:30</button>
+                <button class="time-btn" id="time1200">12:00</button>
+                <button class="time-btn" id="time1230">12:30</button>
+                <button class="time-btn" id="time100">1:00</button>
             </div>
         </div>
 
@@ -982,11 +984,11 @@
             <div class="check">&#x1F354;</div>
             <h2>Order Sent!</h2>
             <p id="confirmMsg">Your order has been sent to Obed.</p>
-            <button class="btn btn-small" onclick="resetUI()">Order Again</button>
+            <button class="btn btn-small" id="btnReset">Order Again</button>
         </div>
 
         <div class="manage-section" id="manageSection">
-            <div class="manage-header" onclick="toggleManage()">
+            <div class="manage-header" id="manageHeaderDiv">
                 <h2>Manage Usuals & Restaurants</h2>
                 <span class="toggle-icon" id="toggleIcon">+</span>
             </div>
@@ -994,7 +996,7 @@
                 <div id="manageRows"></div>
                 <div class="add-restaurant-row">
                     <input type="text" id="newRestaurantName" placeholder="New restaurant name...">
-                    <button class="btn btn-teal btn-small" onclick="addRestaurant()">+ Add</button>
+                    <button class="btn btn-teal btn-small" id="btnAddRestaurant">+ Add</button>
                 </div>
             </div>
         </div>
@@ -1002,11 +1004,20 @@
 
     <script>
         // ---- EMAILJS CONFIG ----
-        // TODO: Replace these with your actual EmailJS credentials
-        // Sign up at https://www.emailjs.com (free tier = 200 emails/month)
-        const EMAILJS_PUBLIC_KEY = "busHdBKduAjbOIsS3";    // From EmailJS dashboard > Account > API Keys
-        const EMAILJS_SERVICE_ID = "service_gll0ucq";    // From EmailJS dashboard > Email Services
-        const EMAILJS_TEMPLATE_ID = "template_lpfr1h6";  // From EmailJS dashboard > Email Templates
+        /*
+         * These EmailJS identifiers are necessarily exposed in client-side code.
+         * This is unavoidable on a static GitHub Pages site with no backend.
+         *
+         * To mitigate abuse, configure the following in your EmailJS dashboard:
+         *   1. Email Services > Settings > restrict "Allowed Origins"
+         *      to your GitHub Pages domain (e.g. https://wa-jm.github.io)
+         *   2. Account > Security > enable rate limiting (e.g. 10 emails/hour)
+         *   3. Email Templates > Settings > lock "To Email" to a fixed address
+         *      so the template cannot be hijacked to send to arbitrary recipients
+         */
+        const EMAILJS_PUBLIC_KEY = "busHdBKduAjbOIsS3";
+        const EMAILJS_SERVICE_ID = "service_gll0ucq";
+        const EMAILJS_TEMPLATE_ID = "template_lpfr1h6";
 
         // Initialize EmailJS
         if (typeof emailjs !== 'undefined') {
@@ -1056,16 +1067,33 @@
 
         // ---- RENDER RESTAURANTS ----
         function renderRestaurants() {
-            const grid = document.getElementById("restaurantGrid");
+            var grid = document.getElementById("restaurantGrid");
             grid.innerHTML = "";
-            appData.restaurants.forEach(name => {
-                const card = document.createElement("div");
+            appData.restaurants.forEach(function(name) {
+                var card = document.createElement("div");
                 card.className = "restaurant-card" + (selectedRestaurant === name ? " selected" : "");
-                card.innerHTML =
-                    '<button class="remove-btn" title="Remove" onclick="event.stopPropagation(); removeRestaurant(\'' + name.replace(/'/g, "\\'") + '\')">&times;</button>' +
-                    '<span class="restaurant-icon">' + (FOOD_ICONS[name] || DEFAULT_ICON) + '</span>' +
-                    '<span class="restaurant-name">' + name + '</span>';
-                card.addEventListener("click", () => selectRestaurant(name));
+
+                var removeBtn = document.createElement("button");
+                removeBtn.className = "remove-btn";
+                removeBtn.title = "Remove";
+                removeBtn.textContent = "\u00D7";
+                removeBtn.addEventListener("click", function(e) {
+                    e.stopPropagation();
+                    removeRestaurant(name);
+                });
+
+                var iconSpan = document.createElement("span");
+                iconSpan.className = "restaurant-icon";
+                iconSpan.textContent = FOOD_ICONS[name] || DEFAULT_ICON;
+
+                var nameSpan = document.createElement("span");
+                nameSpan.className = "restaurant-name";
+                nameSpan.textContent = name;
+
+                card.appendChild(removeBtn);
+                card.appendChild(iconSpan);
+                card.appendChild(nameSpan);
+                card.addEventListener("click", function() { selectRestaurant(name); });
                 grid.appendChild(card);
             });
         }
@@ -1143,7 +1171,6 @@
 
             if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== "YOUR_PUBLIC_KEY") {
                 emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-                    to_email: "obed@wadvisorslp.com",
                     reply_to: "jacob@wadvisorslp.com",
                     from_name: "What's for Lunch?",
                     restaurant: selectedRestaurant,
@@ -1264,7 +1291,6 @@
             // Send notification to Obed via EmailJS
             if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== "YOUR_PUBLIC_KEY") {
                 emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-                    to_email: "obed@wadvisorslp.com",
                     reply_to: "jacob@wadvisorslp.com",
                     from_name: "What's for Lunch?",
                     restaurant: "No Order",
@@ -1313,13 +1339,29 @@
             appData.restaurants.forEach(function(name) {
                 var row = document.createElement("div");
                 row.className = "manage-row";
-                var escapedName = name.replace(/'/g, "\\'");
-                row.innerHTML =
-                    '<label>' + name + '</label>' +
-                    '<input type="text" value="' + (appData.usuals[name] || '').replace(/"/g, '&quot;') + '" ' +
-                    'placeholder="e.g. Burrito Bowl, extra guac" ' +
-                    'onchange="saveUsual(\'' + escapedName + '\', this.value, this)">' +
-                    '<button class="save-icon" title="Save" onclick="saveUsual(\'' + escapedName + '\', this.previousElementSibling.value, this.previousElementSibling)">\u{1F4BE}</button>';
+
+                var label = document.createElement("label");
+                label.textContent = name;
+
+                var input = document.createElement("input");
+                input.type = "text";
+                input.value = appData.usuals[name] || "";
+                input.placeholder = "e.g. Burrito Bowl, extra guac";
+                input.addEventListener("change", function() {
+                    saveUsual(name, input.value, input);
+                });
+
+                var saveBtn = document.createElement("button");
+                saveBtn.className = "save-icon";
+                saveBtn.title = "Save";
+                saveBtn.textContent = "\u{1F4BE}";
+                saveBtn.addEventListener("click", function() {
+                    saveUsual(name, input.value, input);
+                });
+
+                row.appendChild(label);
+                row.appendChild(input);
+                row.appendChild(saveBtn);
                 container.appendChild(row);
             });
         }
@@ -1339,6 +1381,10 @@
             var input = document.getElementById("newRestaurantName");
             var name = input.value.trim();
             if (!name) return;
+            if (name.length > 60) {
+                alert("Restaurant name is too long (max 60 characters).");
+                return;
+            }
             if (appData.restaurants.indexOf(name) !== -1) {
                 alert("Restaurant already exists!");
                 return;
@@ -1368,12 +1414,37 @@
         // ---- INIT ----
         renderRestaurants();
         renderManageRows();
+
+        // ---- BIND EVENT LISTENERS ----
+        document.getElementById('btnOwnThing').addEventListener('click', doOwnThing);
+        document.getElementById('btnUsual').addEventListener('click', chooseUsual);
+        document.getElementById('btnSomethingElse').addEventListener('click', chooseSomethingElse);
+        document.getElementById('confirmUsualBtn').addEventListener('click', function() {
+            submitOrder('usual');
+        });
+        document.getElementById('btnSubmitCustom').addEventListener('click', function() {
+            submitOrder('custom');
+        });
+        document.getElementById('timeNow').addEventListener('click', function() { selectTime('Now'); });
+        document.getElementById('time1130').addEventListener('click', function() { selectTime('11:30'); });
+        document.getElementById('time1200').addEventListener('click', function() { selectTime('12:00'); });
+        document.getElementById('time1230').addEventListener('click', function() { selectTime('12:30'); });
+        document.getElementById('time100').addEventListener('click', function() { selectTime('1:00'); });
+        document.getElementById('btnReset').addEventListener('click', resetUI);
+        document.getElementById('manageHeaderDiv').addEventListener('click', toggleManage);
+        document.getElementById('btnAddRestaurant').addEventListener('click', addRestaurant);
     </script>
     </div><!-- end appContent -->
 
     <script>
-    // Password gate — hash compared so password isn't in plain text in source
+    /*
+     * PASSWORD GATE - CLIENT-SIDE OBFUSCATION ONLY
+     * The hash and comparison logic are visible in the page source.
+     * This deters casual access but is NOT a security boundary.
+     * For real authentication, a server-side solution is required.
+     */
     const PASS_HASH = '972440c1abd45466fb36c4e4d7b013d42815c783d680ddf8ae335f9801ab1074';
+    var AUTH_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
 
     async function sha256(str) {
         const buf = await crypto.subtle.digest('SHA-256',
@@ -1388,7 +1459,10 @@
         if (hash === PASS_HASH) {
             document.getElementById('passwordGate').style.display = 'none';
             document.getElementById('appContent').style.display = 'block';
-            localStorage.setItem('lunchAuth', PASS_HASH);
+            localStorage.setItem('lunchAuth', JSON.stringify({
+                hash: PASS_HASH,
+                ts: Date.now()
+            }));
         } else {
             document.getElementById('gateError').style.display = 'block';
             document.getElementById('gatePassword').value = '';
@@ -1396,13 +1470,27 @@
         }
     }
 
-    // Auto-unlock if previously authenticated
-    if (localStorage.getItem('lunchAuth') === PASS_HASH) {
-        document.getElementById('passwordGate').style.display = 'none';
-        document.getElementById('appContent').style.display = 'block';
-    } else {
+    // Bind password gate event listeners
+    document.getElementById('gatePassword').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') checkGatePassword();
+    });
+    document.getElementById('gateSubmitBtn').addEventListener('click', checkGatePassword);
+
+    // Auto-unlock if previously authenticated and session hasn't expired
+    (function checkStoredAuth() {
+        try {
+            var stored = JSON.parse(localStorage.getItem('lunchAuth'));
+            if (stored && stored.hash === PASS_HASH &&
+                (Date.now() - stored.ts) < AUTH_EXPIRY_MS) {
+                document.getElementById('passwordGate').style.display = 'none';
+                document.getElementById('appContent').style.display = 'block';
+                return;
+            }
+        } catch(e) {}
+        // Expired or invalid -- clear and show gate
+        localStorage.removeItem('lunchAuth');
         document.getElementById('gatePassword').focus();
-    }
+    })();
     </script>
 </body>
 </html>
